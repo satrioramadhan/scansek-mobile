@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "632959232338",
+    "project_id": "scansek-backend",
+    "storage_bucket": "scansek-backend.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:632959232338:android:44c2dace0542599c2ff28b",
+        "android_client_info": {
+          "package_name": "com.scansek.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "632959232338-g21dklf75hq5od38o783s7t1dogllqu2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.scansek.app",
+            "certificate_hash": "307461615bc6e491ad5b0c91cf52039c811f2afe"
+          }
+        },
+        {
+          "client_id": "632959232338-e8ncl2l56uq1e4a1qdj81ncbrqq3fe8p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDpEioXUeW_EmgcxvfVY-wagybUQCNhJkg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "632959232338-cgjg02lnblo2hrs7es7l7359i1qjmjrj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
