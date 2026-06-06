@@ -89,16 +89,9 @@ class ScannerView extends GetView<ScannerController> {
             if (controller.scannedImagePath.value.isEmpty)
               _buildTopBar(context),
 
-            // Pro AI Offer (Banner replaces Button)
-            if (controller.showProOffer.value && !controller.isCameraProMode.value && !controller.isProcessing.value)
-              _buildProOfferBanner(),
-
             // 🌟 NEW: Persistent Bottom Sheet inside the Stack
             if (controller.isShowingResult.value)
               ScanResultBottomSheet(controller: controller),
-              
-            if (controller.isShowingPhysicalPrompt.value)
-              PhysicalFoodPromptBottomSheet(controller: controller),
 
             // Processing Indicator
             if (controller.isProcessing.value || controller.isProScanning.value)
@@ -283,13 +276,6 @@ class ScannerView extends GetView<ScannerController> {
               File(imagePath), 
               fit: BoxFit.contain,
             ),
-            CustomPaint(
-              painter: ScannerOverlayPainter(
-                sugarRect: controller.sugarRect.value,
-                caloriesRect: controller.caloriesRect.value,
-                imageSize: controller.imageSize.value,
-              ),
-            ),
           ],
         ),
       );
@@ -308,12 +294,8 @@ class ScannerView extends GetView<ScannerController> {
   }
 
   Widget _buildScanOverlay() {
-    final frameColor = controller.isCameraProMode.value || controller.isPhysicalFoodMode.value ? Colors.orangeAccent : const Color(0xFF00BFA5);
-    final hintText = controller.isPhysicalFoodMode.value 
-        ? 'Arahin ke piring makanan\nuntuk ditebak AI'
-        : controller.isCameraProMode.value 
-            ? 'Arahin ke label khusus\nuntuk diproses AI' 
-            : 'Arahin ke label\nInformasi Nilai Gizi';
+    final frameColor = const Color(0xFF00BFA5);
+    final hintText = 'Arahin ke label\nInformasi Nilai Gizi';
 
     return Stack(
       children: [
@@ -474,53 +456,25 @@ class ScannerView extends GetView<ScannerController> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Button Kemasan
-                        GestureDetector(
-                          onTap: () => controller.isPhysicalFoodMode.value = false,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: !controller.isPhysicalFoodMode.value ? const Color(0xFF009688) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.qr_code, size: 16, color: !controller.isPhysicalFoodMode.value ? Colors.white : Colors.white70),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Kemasan',
-                                  style: TextStyle(
-                                    color: !controller.isPhysicalFoodMode.value ? Colors.white : Colors.white70,
-                                    fontSize: 13,
-                                    fontWeight: !controller.isPhysicalFoodMode.value ? FontWeight.bold : FontWeight.normal,
-                                  ),
-                                ),
-                              ],
-                            ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF009688),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                        ),
-                        // Button Makanan
-                        GestureDetector(
-                          onTap: () => controller.isPhysicalFoodMode.value = true,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: controller.isPhysicalFoodMode.value ? Colors.orangeAccent : Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(Icons.restaurant, size: 16, color: controller.isPhysicalFoodMode.value ? Colors.white : Colors.white70),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Piring/Fisik',
-                                  style: TextStyle(
-                                    color: controller.isPhysicalFoodMode.value ? Colors.white : Colors.white70,
-                                    fontSize: 13,
-                                    fontWeight: controller.isPhysicalFoodMode.value ? FontWeight.bold : FontWeight.normal,
-                                  ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.qr_code, size: 16, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                'Mode Scan',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -590,7 +544,7 @@ class ScannerView extends GetView<ScannerController> {
                     margin: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: controller.isPhysicalFoodMode.value ? Colors.orangeAccent : const Color(0xFF009688),
+                      color: const Color(0xFF009688),
                     ),
                   ),
                 ),

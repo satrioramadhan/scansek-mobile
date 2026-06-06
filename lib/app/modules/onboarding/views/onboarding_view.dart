@@ -37,8 +37,8 @@ class OnboardingView extends GetView<OnboardingController> {
                   OnboardingPage(
                     step: 3,
                     title: 'Lacak Aktivitas Fisik',
-                    description: 'Dukung 4 mode aktivitas olahraga dan tersinkronisasi otomatis dengan Smartwatch.',
-                    graphic: Step3Graphic(), // Smartwatch Graphic
+                    description: 'Dukung berbagai mode aktivitas olahraga untuk gaya hidup yang lebih sehat.',
+                    graphic: Step3Graphic(), // Activity Graphic
                   ),
                   OnboardingPage(
                     step: 4,
@@ -708,58 +708,102 @@ class Step3Graphic extends StatelessWidget {
           ),
         ),
 
-        // Smartwatch Illustration
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Top Strap
-            Container(
-              width: 70,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.gray300,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        // Phone Map Illustration
+        Container(
+          width: 170,
+          height: 280,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppColors.gray200, width: 4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 30,
+                offset: const Offset(0, 15),
               ),
-            ),
-            // Watch Face
-            Container(
-              width: 140,
-              height: 150,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C3E50), // Dark smart watch body
-                borderRadius: BorderRadius.circular(32),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 30,
-                    offset: const Offset(0, 15),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Map Background (Greenish)
+                Container(color: AppColors.chartWater.withOpacity(0.2)),
+                
+                // Route line
+                Positioned(
+                  top: 50,
+                  left: 40,
+                  child: Container(
+                    width: 90,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(color: AppColors.primary, width: 4),
+                        bottom: BorderSide(color: AppColors.primary, width: 4),
+                      ),
+                      borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(20)),
+                    ),
                   ),
-                ],
-                border: Border.all(color: Colors.white, width: 4),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.favorite_rounded, color: AppColors.chartCaloriesConsumed, size: 48),
-                    const SizedBox(height: 8),
-                    Container(height: 6, width: 60, decoration: BoxDecoration(color: Colors.white.withOpacity(0.8), borderRadius: BorderRadius.circular(3))),
-                    const SizedBox(height: 6),
-                    Container(height: 6, width: 40, decoration: BoxDecoration(color: Colors.white.withOpacity(0.4), borderRadius: BorderRadius.circular(3))),
-                  ],
                 ),
-              ),
+                
+                // Start Marker
+                Positioned(
+                  top: 40,
+                  left: 30,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: AppColors.chartOrange,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+                
+                // End Marker
+                Positioned(
+                  top: 160,
+                  left: 120,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(child: Icon(Icons.star, color: Colors.white, size: 12)),
+                  ),
+                ),
+                
+                // Bottom UI panel on phone
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 60,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text('START', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            // Bottom Strap
-            Container(
-              width: 70,
-              height: 40,
-              decoration: const BoxDecoration(
-                color: AppColors.gray300,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );

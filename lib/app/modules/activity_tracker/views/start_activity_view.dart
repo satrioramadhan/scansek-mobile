@@ -73,18 +73,14 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                 maxZoom: 22.0,
               ),
               children: [
-                // OpenStreetMap tiles (Dynamic based on selected style)
-                Obx(() {
-                  final style = controller.selectedMapStyle.value;
-                  return TileLayer(
-                    urlTemplate: style.tileUrl,
-                    subdomains: style.subdomains,
-                    userAgentPackageName: 'com.scansek.app',
-                    maxZoom: 22,
-                    maxNativeZoom: 19,
-                    tileProvider: CachedTileProvider(),
-                  );
-                }),
+                // OpenStreetMap tiles (Static)
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.scansek.app',
+                  maxZoom: 22,
+                  maxNativeZoom: 19,
+                  tileProvider: CachedTileProvider(),
+                ),
                 
                 // Route polyline
                 if (controller.isTracking.value && controller.routePoints.isNotEmpty)
@@ -111,19 +107,10 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF81C784), // Theme Green
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: controller.selectedMapStyle.value == MapStyle.satellite
-                                ? Colors.transparent
-                                : (controller.selectedMapStyle.value == MapStyle.dark
-                                    ? const Color(0xFF1E1E1E)
-                                    : Colors.white), 
-                            width: 3,
-                          ),
+                          border: Border.all(color: Colors.white, width: 3),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF81C784).withOpacity(
-                                controller.selectedMapStyle.value == MapStyle.satellite ? 0.8 : 0.4
-                              ),
+                              color: const Color(0xFF81C784).withOpacity(0.4),
                               blurRadius: 10,
                               spreadRadius: 4,
                             ),
@@ -138,95 +125,27 @@ class StartActivityView extends GetView<ActivityTrackerController> {
           }),
 
           // Top UI Elements (Back & Map Style)
-          Obx(() {
-            final mapStyle = controller.selectedMapStyle.value;
-            Color btnBgColor;
-            Color btnIconColor;
-            
-            if (mapStyle == MapStyle.dark) {
-              btnBgColor = const Color(0xFF1E1E1E);
-              btnIconColor = Colors.white;
-            } else if (mapStyle == MapStyle.satellite) {
-              btnBgColor = Colors.white.withOpacity(0.15);
-              btnIconColor = Colors.white;
-            } else {
-              btnBgColor = Colors.white;
-              btnIconColor = Colors.black87;
-            }
-
-            Widget buildFrosted(Widget child, double radius) {
-              if (mapStyle == MapStyle.satellite) {
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(radius),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: child,
+          // Top UI Elements (Back Button)
+          Positioned(
+            top: 50,
+            left: 20,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 12,
                   ),
-                );
-              }
-              return child;
-            }
-
-            return Stack(
-              children: [
-                // Floating Back Button (Top-left)
-                Positioned(
-                  top: 50,
-                  left: 20,
-                  child: buildFrosted(
-                    Container(
-                      decoration: BoxDecoration(
-                        color: btnBgColor,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          if (mapStyle != MapStyle.satellite)
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.15),
-                              blurRadius: 12,
-                            ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: Icon(Icons.arrow_back, color: btnIconColor),
-                        onPressed: () => Get.back(),
-                      ),
-                    ),
-                    100,
-                  ),
-                ),
-
-                // Map Style Switcher Button (Below back button) - Hide if GPS not required
-                if (!(controller.isTracking.value && !controller.isCurrentActivityGpsRequired))
-                  Positioned(
-                    top: 110,
-                    left: 20,
-                    child: buildFrosted(
-                      Container(
-                        decoration: BoxDecoration(
-                          color: btnBgColor,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            if (mapStyle != MapStyle.satellite)
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 12,
-                              ),
-                          ],
-                        ),
-                        child: IconButton(
-                          icon: Icon(
-                            controller.selectedMapStyle.value.icon,
-                            color: mapStyle == MapStyle.satellite ? Colors.white : const Color(0xFF81C784),
-                          ),
-                          onPressed: () => _showMapStyleDialog(),
-                        ),
-                      ),
-                      100,
-                    ),
-                  ),
-              ],
-            );
-          }),
+                ],
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.arrow_back, color: Colors.black87),
+                onPressed: () => Get.back(),
+              ),
+            ),
+          ),
 
 
           // Location Button - Follows bottom sheet with gravity
@@ -240,34 +159,24 @@ class StartActivityView extends GetView<ActivityTrackerController> {
             final sheetHeight = screenHeight * sheetSize;
             final buttonBottom = sheetHeight + 8; // 8px gap above card
             
-            final mapStyle = controller.selectedMapStyle.value;
-            Color btnBgColor;
-            
-            if (mapStyle == MapStyle.dark) {
-              btnBgColor = const Color(0xFF1E1E1E);
-            } else if (mapStyle == MapStyle.satellite) {
-              btnBgColor = Colors.white.withOpacity(0.15);
-            } else {
-              btnBgColor = Colors.white;
-            }
+            Color btnBgColor = Colors.white;
 
             Widget locationBtn = Container(
               decoration: BoxDecoration(
                 color: btnBgColor,
                 shape: BoxShape.circle,
                 boxShadow: [
-                  if (mapStyle != MapStyle.satellite)
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 12,
-                    ),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 12,
+                  ),
                 ],
               ),
               child: IconButton(
                 iconSize: 28,
-                icon: Icon(
+                icon: const Icon(
                   Icons.my_location, 
-                  color: mapStyle == MapStyle.satellite ? Colors.white : const Color(0xFF81C784)
+                  color: Color(0xFF81C784)
                 ),
                 onPressed: () {
                   final position = controller.currentLocation.value;
@@ -311,15 +220,7 @@ class StartActivityView extends GetView<ActivityTrackerController> {
               ),
             );
 
-            if (mapStyle == MapStyle.satellite) {
-              locationBtn = ClipRRect(
-                borderRadius: BorderRadius.circular(100),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: locationBtn,
-                ),
-              );
-            }
+            // No blur needed
 
             return Positioned(
               bottom: buttonBottom,
@@ -342,44 +243,22 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                   return true;
                 },
                 child: Obx(() {
-                  final mapStyle = controller.selectedMapStyle.value;
-                  Color cardColor;
-                  Color textColor;
-                  Color secondaryTextColor;
-                  Color dividerColor;
-                  Color handleColor;
-                  
-                  if (mapStyle == MapStyle.dark) {
-                    cardColor = const Color(0xFF1E1E1E);
-                    textColor = Colors.white;
-                    secondaryTextColor = Colors.grey[400]!;
-                    dividerColor = Colors.white24;
-                    handleColor = Colors.grey[700]!;
-                  } else if (mapStyle == MapStyle.satellite) {
-                    cardColor = Colors.white.withOpacity(0.15); // Frosted clear glass
-                    textColor = Colors.white;
-                    secondaryTextColor = Colors.white70;
-                    dividerColor = Colors.white24;
-                    handleColor = Colors.white54;
-                  } else {
-                    cardColor = Colors.white;
-                    textColor = Colors.black87;
-                    secondaryTextColor = Colors.grey[600]!;
-                    dividerColor = Colors.black12;
-                    handleColor = Colors.grey[300]!;
-                  }
+                  Color cardColor = Colors.white;
+                  Color textColor = Colors.black87;
+                  Color secondaryTextColor = Colors.grey[600]!;
+                  Color dividerColor = Colors.black12;
+                  Color handleColor = Colors.grey[300]!;
 
                   Widget sheetContent = Container(
                       decoration: BoxDecoration(
                         color: cardColor,
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                         boxShadow: [
-                          if (mapStyle != MapStyle.satellite)
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, -5),
-                            ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, -5),
+                          ),
                         ],
                       ),
                       child: ListView(
@@ -439,7 +318,7 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: mapStyle == MapStyle.light ? const Color(0xFFFFEBEE) : const Color(0xFFFFEBEE).withOpacity(0.15),
+                                      color: const Color(0xFFFFEBEE),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Icon(
@@ -491,7 +370,7 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: mapStyle == MapStyle.light ? const Color(0xFFF3E5F5) : const Color(0xFFF3E5F5).withOpacity(0.15),
+                                      color: const Color(0xFFF3E5F5),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: const Icon(
@@ -591,14 +470,10 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                           child: ElevatedButton(
                             onPressed: () => _showActivityTypeDialog(),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: mapStyle == MapStyle.satellite 
-                                  ? Colors.white.withOpacity(0.25) 
-                                  : const Color(0xFF81C784), // Soft green
+                              backgroundColor: const Color(0xFF81C784), // Soft green
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
-                                side: mapStyle == MapStyle.satellite 
-                                    ? const BorderSide(color: Colors.white, width: 1.5)
-                                    : BorderSide.none,
+                                side: BorderSide.none,
                               ),
                               elevation: 0,
                             ),
@@ -622,16 +497,12 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                                 child: ElevatedButton(
                                   onPressed: () => controller.togglePause(),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: mapStyle == MapStyle.satellite
-                                        ? Colors.white.withOpacity(0.25)
-                                        : (controller.isPaused.value
+                                    backgroundColor: controller.isPaused.value
                                             ? const Color(0xFF81C784) // Green when paused (press to resume)
-                                            : const Color(0xFFFFB74D)), // Orange when running (press to pause)
+                                            : const Color(0xFFFFB74D), // Orange when running (press to pause)
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
-                                      side: mapStyle == MapStyle.satellite 
-                                          ? const BorderSide(color: Colors.white, width: 1.5)
-                                          : BorderSide.none,
+                                      side: BorderSide.none,
                                     ),
                                     elevation: 0,
                                   ),
@@ -654,14 +525,10 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                                 child: ElevatedButton(
                                   onPressed: () => controller.stopTracking(),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: mapStyle == MapStyle.satellite
-                                        ? Colors.white.withOpacity(0.25)
-                                        : const Color(0xFFEF9A9A), // Soft red
+                                    backgroundColor: const Color(0xFFEF9A9A), // Soft red
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16),
-                                      side: mapStyle == MapStyle.satellite 
-                                          ? const BorderSide(color: Colors.white, width: 1.5)
-                                          : BorderSide.none,
+                                      side: BorderSide.none,
                                     ),
                                     elevation: 0,
                                   ),
@@ -683,16 +550,6 @@ class StartActivityView extends GetView<ActivityTrackerController> {
                     }),
                   ],
                 ));
-                
-                if (mapStyle == MapStyle.satellite) {
-                  return ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: sheetContent,
-                    ),
-                  );
-                }
                 
                 return sheetContent;
               }),
@@ -772,23 +629,10 @@ class StartActivityView extends GetView<ActivityTrackerController> {
   }
 
   void _showActivityTypeDialog() {
-    final mapStyle = controller.selectedMapStyle.value;
     Color bgColor = Colors.white;
     Color textColor = Colors.black87;
     Color subTextColor = Colors.grey[600]!;
     Color handleColor = Colors.grey[300]!;
-
-    if (mapStyle == MapStyle.dark) {
-      bgColor = const Color(0xFF1E1E1E);
-      textColor = Colors.white;
-      subTextColor = Colors.grey[400]!;
-      handleColor = Colors.grey[700]!;
-    } else if (mapStyle == MapStyle.satellite) {
-      bgColor = Colors.white.withOpacity(0.15); // Frosted clear glass
-      textColor = Colors.white;
-      subTextColor = Colors.white70;
-      handleColor = Colors.white54;
-    }
 
     Widget sheetContent = Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -879,18 +723,7 @@ class StartActivityView extends GetView<ActivityTrackerController> {
         ),
       );
 
-    if (mapStyle == MapStyle.satellite) {
-      sheetContent = ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(32),
-          topRight: Radius.circular(32),
-        ),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: sheetContent,
-        ),
-      );
-    }
+
 
     Get.bottomSheet(
       sheetContent,
@@ -970,156 +803,7 @@ class StartActivityView extends GetView<ActivityTrackerController> {
     );
   }
 
-  void _showMapStyleDialog() {
-    final mapStyle = controller.selectedMapStyle.value;
-    Color bgColor = Colors.white;
-    Color textColor = Colors.black87;
 
-    if (mapStyle == MapStyle.dark) {
-      bgColor = const Color(0xFF1E1E1E);
-      textColor = Colors.white;
-    } else if (mapStyle == MapStyle.satellite) {
-      bgColor = Colors.white.withOpacity(0.15); // Frosted clear glass
-      textColor = Colors.white;
-    }
-
-    Widget dialogContent = Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Pilih Gaya Peta',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Light Map Option
-              _buildMapStyleOption(
-                MapStyle.light,
-                'Terang (Modern)',
-                'Tampilan bersih estetik, cocok untuk siang hari',
-                const Color(0xFF81C784),
-                textColor,
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Dark Map Option
-              _buildMapStyleOption(
-                MapStyle.dark,
-                'Gelap (Aesthetic)',
-                'Tampilan elegan ala mode gelap, cocok untuk malam hari',
-                const Color(0xFF90CAF9),
-                textColor,
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Satellite Map Option
-              _buildMapStyleOption(
-                MapStyle.satellite,
-                'Satelit (Nyata)',
-                'Tampilan asli dari satelit dengan label jalan raya',
-                const Color(0xFFFFB74D),
-                textColor,
-              ),
-            ],
-          ),
-      );
-
-    if (mapStyle == MapStyle.satellite) {
-      dialogContent = ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: dialogContent,
-        ),
-      );
-    }
-
-    Get.dialog(
-      Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: dialogContent,
-      ),
-    );
-  }
-
-  Widget _buildMapStyleOption(MapStyle style, String label, String description, Color color, Color textColor) {
-    return Obx(() {
-      final isSelected = controller.selectedMapStyle.value == style;
-      return InkWell(
-        onTap: () {
-          controller.selectedMapStyle.value = style;
-          Get.back(); // Close dialog
-        },
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          decoration: BoxDecoration(
-            color: isSelected ? color.withOpacity(0.2) : color.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? color : color.withOpacity(0.2),
-              width: isSelected ? 2.5 : 1.5,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(style.icon, color: color, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? color : textColor,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: textColor.withOpacity(0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isSelected)
-                Icon(Icons.check_circle, color: color, size: 24),
-            ],
-          ),
-        ),
-      );
-    });
-  }
 }
 
 // Custom Tile Provider untuk Caching Map Data (Biar hemat kuota & bisa offline)

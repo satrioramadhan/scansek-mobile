@@ -29,33 +29,7 @@ class ProfileController extends GetxController {
   final RxBool shouldShowUpdateMetricsBanner = false.obs;
   final RxBool isFastingMode = false.obs;
 
-  /// Cek apakah user sedang dalam fase stabilisasi (4 minggu / 28 hari)
-  bool get isStabilizationPhase {
-    final updateTime = user.value?.bmiCategoryUpdatedAt;
-    final previousCat = user.value?.previousBmiCategory;
-    final currentCat = user.value?.bmi != null ? BMIHelper.getCategory(user.value!.bmi).name : null;
-    
-    if (updateTime != null && previousCat != null && currentCat != null && previousCat != currentCat) {
-      final diff = DateTime.now().difference(updateTime).inDays;
-      return diff < 28;
-    }
-    return false;
-  }
 
-  /// Menghitung sisa hari stabilisasi
-  int get stabilizationDaysLeft {
-    final updateTime = user.value?.bmiCategoryUpdatedAt;
-    final previousCat = user.value?.previousBmiCategory;
-    final currentCat = user.value?.bmi != null ? BMIHelper.getCategory(user.value!.bmi).name : null;
-    
-    if (updateTime != null && previousCat != null && currentCat != null && previousCat != currentCat) {
-      final diff = DateTime.now().difference(updateTime).inDays;
-      if (diff < 28) {
-        return 28 - diff;
-      }
-    }
-    return 0;
-  }
 
   @override
   void onInit() {
@@ -328,117 +302,10 @@ class ProfileController extends GetxController {
     try {
       isLoading.value = true;
       
-      // Calculate new BMI category locally to detect changes
-      final newBmi = weight / ((height / 100) * (height / 100));
-      
-      String getCategoryFromValue(double bmiVal) {
-        if (bmiVal < 18.5) return 'Kurus';
-        if (bmiVal < 25.0) return 'Normal';
-        if (bmiVal < 27.0) return 'Gemuk (Overweight)';
-        if (bmiVal < 30.0) return 'Obesitas Tingkat 1';
-        return 'Obesitas Tingkat 2';
-      }
-
-      final currentCategory = getCategoryFromValue(bmi.value ?? 0);
-      final newCategory = getCategoryFromValue(newBmi);
-
-      String? updatedPreviousCategory = userModel?.previousBmiCategory;
-      DateTime? updatedCategoryTime = userModel?.bmiCategoryUpdatedAt;
-
-      bool goalsUpdated = false;
-      Map<String, dynamic>? newGoals;
-      
-      // Simpan goals saat ini (custom goals user) biar nggak ke-reset sepihak sama backend
-      final currentCustomGoals = userModel?.goals;
-
-      bool stabilityPassed = false;
-
-      if (currentCategory != newCategory && bmi.value != null && bmi.value! > 0) {
-        int getSeverity(String cat) {
-          if (cat == 'Normal') return 0;
-          if (cat == 'Kurus' || cat == 'Gemuk (Overweight)') return 1;
-          if (cat == 'Obesitas Tingkat 1') return 2;
-          if (cat == 'Obesitas Tingkat 2') return 3;
-          return 0;
-        }
-        
-        bool isWorsening = getSeverity(newCategory) > getSeverity(currentCategory);
-        
-        if (isWorsening) {
-          // BMI memburuk (makin jauh dari Normal), langsung update goals
-          updatedPreviousCategory = newCategory;
-          updatedCategoryTime = DateTime.now();
-          
-          final categoryClass = BMIHelper.getCategory(newBmi);
-          newGoals = {
-            'dailySugarGoal': categoryClass.defaultSugar,
-            'dailyCalorieGoal': categoryClass.defaultCalories,
-            'dailyWaterGoal': categoryClass.defaultWater,
-            'dailyBurnGoal': categoryClass.defaultBurn,
-          };
-          try {
-            await _apiClient.put(ApiEndpoints.updateGoals, data: newGoals);
-            goalsUpdated = true;
-          } catch (e) {
-            print('❌ Failed to auto-update goals dynamically: $e');
-          }
-        } else {
-          // BMI membaik (mendekati Normal), masuk fase stabilitas
-          updatedPreviousCategory = currentCategory;
-          updatedCategoryTime = DateTime.now();
-        }
-      } 
-      // Jika kategori tidak berubah, cek apakah user sedang dalam masa stabilitas
-      else if (currentCategory == newCategory && updatedCategoryTime != null && updatedPreviousCategory != null && updatedPreviousCategory != currentCategory) {
-        final diff = DateTime.now().difference(updatedCategoryTime).inDays;
-        if (diff >= 28) {
-          // LULUS Fase stabilitas (sudah 28 hari konsisten di BMI baru)
-          
-          // Cek apakah target saat ini adalah custom target
-          bool isCustomized = false;
-          if (currentCustomGoals != null) {
-            BMICategory? oldCat;
-            for (var cat in BMIHelper.categories) {
-              if (cat.name == updatedPreviousCategory) { oldCat = cat; break; }
-            }
-            if (oldCat != null) {
-              if (currentCustomGoals.dailyCalorieGoal != oldCat.defaultCalories ||
-                  currentCustomGoals.dailySugarGoal != oldCat.defaultSugar ||
-                  currentCustomGoals.dailyWaterGoal != oldCat.defaultWater ||
-                  currentCustomGoals.dailyBurnGoal != oldCat.defaultBurn) {
-                isCustomized = true;
-              }
-            }
-          }
-          
-          updatedPreviousCategory = newCategory; // Set sama agar stabilitas selesai
-          updatedCategoryTime = DateTime.now();
-          stabilityPassed = true;
-          
-          if (!isCustomized) {
-            final categoryClass = BMIHelper.getCategory(newBmi);
-            newGoals = {
-              'dailySugarGoal': categoryClass.defaultSugar,
-              'dailyCalorieGoal': categoryClass.defaultCalories,
-              'dailyWaterGoal': categoryClass.defaultWater,
-              'dailyBurnGoal': categoryClass.defaultBurn,
-            };
-            try {
-              await _apiClient.put(ApiEndpoints.updateGoals, data: newGoals);
-              goalsUpdated = true;
-            } catch (e) {
-              print('❌ Failed to auto-update goals dynamically: $e');
-            }
-          }
-        }
-      }
-
       final Map<String, dynamic> data = {
         'weight': weight,
         'height': height,
         'lastBodyMetricsUpdate': DateTime.now().toIso8601String(),
-        if (updatedPreviousCategory != null) 'previousBmiCategory': updatedPreviousCategory,
-        if (updatedCategoryTime != null) 'bmiCategoryUpdatedAt': updatedCategoryTime.toIso8601String(),
       };
       
       final response = await _apiClient.put('/users/profile', data: data);
@@ -460,8 +327,6 @@ class ProfileController extends GetxController {
             height: height,
             bmi: bmi.value,
             lastBodyMetricsUpdate: DateTime.now(),
-            previousBmiCategory: updatedPreviousCategory,
-            bmiCategoryUpdatedAt: updatedCategoryTime,
           );
         }
 
@@ -470,170 +335,18 @@ class ProfileController extends GetxController {
         currentUserData['weight'] = weight;
         currentUserData['height'] = height;
         currentUserData['lastBodyMetricsUpdate'] = DateTime.now().toIso8601String();
-        if (updatedPreviousCategory != null) currentUserData['previousBmiCategory'] = updatedPreviousCategory;
-        if (updatedCategoryTime != null) currentUserData['bmiCategoryUpdatedAt'] = updatedCategoryTime.toIso8601String();
         if (responseData['bmi'] != null) currentUserData['bmi'] = responseData['bmi'];
-        
-        if (goalsUpdated && newGoals != null) {
-          currentUserData['goals'] = {
-            'dailySugarGoal': newGoals['dailySugarGoal'],
-            'dailyCalorieGoal': newGoals['dailyCalorieGoal'],
-            'dailyWaterGoal': newGoals['dailyWaterGoal'],
-            'dailyBurnGoal': newGoals['dailyBurnGoal'],
-          };
-          user.value = user.value?.copyWith(
-             goals: GoalsModel(
-                dailySugarGoal: (newGoals['dailySugarGoal'] as num).toDouble(),
-                dailyCalorieGoal: (newGoals['dailyCalorieGoal'] as num).toDouble(),
-                dailyWaterGoal: (newGoals['dailyWaterGoal'] as num).toDouble(),
-                dailyBurnGoal: (newGoals['dailyBurnGoal'] as num).toDouble(),
-             ),
-          );
-        }
         
         await _storage.saveUserData(currentUserData);
         
-        // Setup Schedule For Local Notification Again here later
-        // ...
-
         Get.back(); // Tutup bottom sheet
         await Future.delayed(const Duration(milliseconds: 300));
         
-        if (currentCategory != newCategory && bmi.value != null && bmi.value! > 0) {
-          // Kategori berubah! Tampilkan Popup Dialog
-          Get.dialog(
-            Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE0F2F1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.swap_vert_rounded, color: Color(0xFF00897B), size: 36),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Kategori BMI Berubah!',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text.rich(
-                      TextSpan(
-                        text: 'Status BMI kamu bergeser dari\n',
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF64748B), height: 1.5),
-                        children: [
-                          TextSpan(text: currentCategory, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                          const TextSpan(text: ' menjadi '),
-                          TextSpan(text: newCategory, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                          const TextSpan(text: '.'),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        goalsUpdated 
-                          ? 'Target harianmu otomatis kita sesuaikan sama BMI $newCategory ya. Kita bantu atur targetnya pelan-pelan biar BMI kamu bisa balik normal lagi. Tetap semangat penuhi targetnya!' 
-                          : 'Target harianmu belum berubah ke $newCategory soalnya kamu lagi masuk Fase Stabilitas (28 hari). Jadi target harian kamu masih sama pas BMI kamu $currentCategory. Kita kunci sementara biar berat badanmu ngga gampang naik-turun. Tetap semangat ya!',
-                        style: const TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Get.back(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00897B),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
-                        ),
-                        child: const Text('Siap, Mengerti!', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            barrierDismissible: false,
-          );
-        } else if (stabilityPassed) {
-          // Tampilkan popup stabilitas lulus
-          Get.dialog(
-            Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE0F2F1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.check_circle_outline, color: Color(0xFF00897B), size: 36),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Selamat! Stabilitas Lulus',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      goalsUpdated 
-                          ? 'Selamat! 🎉 Kamu hebat banget udah berhasil ngejaga kestabilan BMI selama 28 hari! Target harianmu sekarang resmi kita perbarui ngikutin anjuran BMI barumu. Pertahankan terus ya pencapaiannya!'
-                          : 'Selamat! 🎉 Kestabilan BMI 28 hari berhasil tercapai, keren!\n\nKarena kamu punya target custom, target lamamu tetep kita pertahankan kok. Tapi kalau kamu mau ganti ke target anjuran BMI baru, kamu udah dapet lampu hijau nih buat ngaturnya di menu Target. Pertahankan terus ya!',
-                      style: const TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () => Get.back(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00897B),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
-                        ),
-                        child: const Text('Mantap!', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            barrierDismissible: false,
-          );
-        } else {
-          // Kategori tidak berubah, tampilkan snackbar biasa
-          ElegantSnackbar.success(
-            Get.context!,
-            'Mantap! Rajin-rajin cek BB dan TB ya biar targetmu selalu update dan pas sama kondisi badan.',
-            duration: const Duration(seconds: 4),
-          );
-        }
+        ElegantSnackbar.success(
+          Get.context!,
+          'Mantap! Rajin-rajin cek BB dan TB ya.',
+          duration: const Duration(seconds: 4),
+        );
         
         // Hide local profile banner immediately
         shouldShowUpdateMetricsBanner.value = false;

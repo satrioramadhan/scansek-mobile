@@ -358,7 +358,7 @@ class InsightView extends GetView<InsightController> {
             number: 3,
             color: const Color(0xFFBA68C8),
             title: 'Grafik Analisis Rapor',
-            description: 'Lihat progres mingguanmu. Ada Grafik Radar (laba-laba) untuk melihat keseimbangan 4 pilar gizi harian, dan Grafik Batang untuk konsistensi mingguan.',
+            description: 'Lihat progres mingguanmu. Ada Grafik Batang untuk melihat konsistensi harian dari target gizi dan aktivitasmu.',
           ),
         ],
       ),

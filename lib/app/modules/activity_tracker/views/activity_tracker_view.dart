@@ -9,8 +9,6 @@ import 'package:scansek/app/widgets/dashboard/health_summary_card.dart';
 import 'package:scansek/app/modules/dashboard/controllers/dashboard_controller.dart';
 import 'dart:math' as math;
 import 'package:scansek/app/widgets/snackbars/snackbar_designs.dart';
-import 'package:scansek/app/services/smartwatch_sync_service.dart';
-
 class ActivityTrackerView extends GetView<ActivityTrackerController> {
   const ActivityTrackerView({super.key});
 
@@ -409,51 +407,7 @@ class ActivityTrackerView extends GetView<ActivityTrackerController> {
       
       return Column(
         children: [
-          // Smartwatch Sync Button
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 16),
-            child: OutlinedButton.icon(
-              onPressed: controller.isSyncingSmartwatch.value 
-                ? null 
-                : () async {
-                    final count = await controller.syncSmartwatch();
-                    if (count > 0 && Get.context != null) {
-                      ElegantSnackbar.success(
-                        Get.context!, 
-                        '$count aktivitas dari smartwatch berhasil disinkronkan!'
-                      );
-                    }
-                  },
-              icon: controller.isSyncingSmartwatch.value
-                ? const SizedBox(
-                    width: 20, 
-                    height: 20, 
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey)
-                  )
-                : const Icon(Icons.watch_outlined, size: 20),
-              label: Text(
-                controller.isSyncingSmartwatch.value
-                  ? 'Menyinkronkan...'
-                  : 'Sinkronkan Smartwatch', 
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600, 
-                  fontSize: 14,
-                  letterSpacing: 0.3,
-                )
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.grey[700], // Soft dark gray text
-                backgroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                side: BorderSide(color: Colors.grey[300]!, width: 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-            ),
-          ),
+
           listContent,
         ],
       );
@@ -475,9 +429,9 @@ class ActivityTrackerView extends GetView<ActivityTrackerController> {
     final isOutdoor = _isOutdoorActivity(activity);
     final source = activity['source']?.toString() ?? 'manual';
     
-    // Use SmartwatchSyncService for label (supports all types)
-    final displayType = SmartwatchSyncService.getActivityLabel(typeStr);
-    
+    // Use Controller for label
+    final displayType = ActivityTrackerController.getActivityLabel(typeStr);
+
     // Dynamic icon and color from controller
     final iconData = ActivityTrackerController.getActivityIcon(typeStr);
     Color iconColor = isOutdoor ? const Color(0xFFFFA726) : const Color(0xFF42A5F5);
@@ -559,26 +513,11 @@ class ActivityTrackerView extends GetView<ActivityTrackerController> {
                   Row(
                     children: [
                       Icon(
-                        source == 'smartwatch' ? Icons.watch_outlined : Icons.phone_android,
+                        Icons.access_time,
                         size: 12,
                         color: AppColors.textSecondary,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        source == 'smartwatch' ? 'Smartwatch' : 'Smartphone',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 11,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '·',
-                        style: AppTextStyles.caption.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
                       Text(
                         _formatTime(activity['startTime']),
                         style: AppTextStyles.caption.copyWith(

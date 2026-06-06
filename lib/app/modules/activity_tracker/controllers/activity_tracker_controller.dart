@@ -20,57 +20,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:scansek/app/services/notification_service.dart';
-import 'package:scansek/app/services/smartwatch_sync_service.dart';
-import 'package:scansek/app/modules/activity_tracker/views/indoor_activity_detail_view.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
-
-// Map Style Options
-enum MapStyle {
-  light,
-  dark,
-  satellite,
-}
-
-extension MapStyleExtension on MapStyle {
-  String get name {
-    switch (this) {
-      case MapStyle.light:
-        return 'Terang (Modern)';
-      case MapStyle.dark:
-        return 'Gelap (Aesthetic)';
-      case MapStyle.satellite:
-        return 'Satelit (Nyata)';
-    }
-  }
-  
-  String get tileUrl {
-    switch (this) {
-      case MapStyle.light:
-        return 'https://mt1.google.com/vt/lyrs=m&hl=in&x={x}&y={y}&z={z}';
-      case MapStyle.dark:
-        // Night map style derived from Google Maps custom styling (Encoded)
-        return 'https://mt1.google.com/vt/lyrs=m&hl=in&x={x}&y={y}&z={z}&apistyle=s.t%3A1%7Cs.e%3Ag%7Cp.c%3A%23ff242f3e%2Cs.t%3A2%7Cs.e%3Ag.f%7Cp.c%3A%23ff746855%2Cs.t%3A2%7Cs.e%3Al.t.f%7Cp.c%3A%23ffd59563%2Cs.t%3A3%7Cs.e%3Ag%7Cp.c%3A%23ff242f3e%2Cs.t%3A3%7Cs.e%3Al.t.f%7Cp.c%3A%23ff746855%2Cs.t%3A3%7Cs.e%3Al.t.s%7Cp.c%3A%23ff242f3e%2Cs.t%3A4%7Cs.e%3Ag%7Cp.c%3A%23ff242f3e%2Cs.t%3A5%7Cs.e%3Ag.f%7Cp.c%3A%23ff38414e%2Cs.t%3A5%7Cs.e%3Ag.s%7Cp.c%3A%23ff212a37%2Cs.t%3A5%7Cs.e%3Al.t.f%7Cp.c%3A%23ff9ca5b3%2Cs.t%3A5%7Cs.e%3Al.t.s%7Cp.c%3A%23ff1f2835%2Cs.t%3A6%7Cs.e%3Ag%7Cp.c%3A%23ff2c3646%2Cs.t%3A6%7Cs.e%3Al.t.f%7Cp.c%3A%23ff8a9097%2Cs.t%3A6%7Cs.e%3Al.t.s%7Cp.c%3A%23ff2c3646';
-      case MapStyle.satellite:
-        // Hybrid mode (Satellite + Labels/Roads)
-        return 'https://mt1.google.com/vt/lyrs=y&hl=in&x={x}&y={y}&z={z}';
-    }
-  }
-  
-  List<String> get subdomains {
-    return ['a', 'b', 'c', 'd'];
-  }
-  
-  IconData get icon {
-    switch (this) {
-      case MapStyle.light:
-        return Icons.wb_sunny;
-      case MapStyle.dark:
-        return Icons.nights_stay;
-      case MapStyle.satellite:
-        return Icons.satellite_alt;
-    }
-  }
-}
 
 
 
@@ -127,14 +77,11 @@ class ActivityTrackerController extends GetxController {
   // DraggableScrollableSheet controller for dynamic button positioning
   final DraggableScrollableController draggableScrollableController = DraggableScrollableController();
   
-  // Smartwatch Sync state
-  final RxBool isSyncingSmartwatch = false.obs;
-  
+
   // Sheet size tracker untuk gravity button
   final RxDouble sheetSize = 0.28.obs; // Initial size
   
-  // Map style selection
-  final Rx<MapStyle> selectedMapStyle = MapStyle.light.obs;
+
 
 
 
@@ -227,6 +174,38 @@ class ActivityTrackerController extends GetxController {
       case 'volleyball': return const Color(0xFFFFCC80);
       case 'daily_summary': return Colors.blueGrey;
       default: return const Color(0xFF81C784);
+    }
+  }
+
+  /// Get label for any activity type
+  static String getActivityLabel(String type) {
+    switch (type) {
+      case 'walking': return 'Jalan Santai';
+      case 'jogging': return 'Jogging';
+      case 'running': return 'Lari';
+      case 'cycling': return 'Bersepeda';
+      case 'hiking': return 'Mendaki';
+      case 'swimming': return 'Berenang';
+      case 'yoga': return 'Yoga';
+      case 'pilates': return 'Pilates';
+      case 'weightlifting': return 'Angkat Beban';
+      case 'jump_rope': return 'Lompat Tali';
+      case 'rowing': return 'Dayung';
+      case 'elliptical': return 'Elliptical';
+      case 'stair_climbing': return 'Naik Tangga';
+      case 'calisthenics': return 'Kalistenik';
+      case 'badminton': return 'Bulu Tangkis';
+      case 'basketball': return 'Bola Basket';
+      case 'soccer': return 'Sepak Bola';
+      case 'table_tennis': return 'Tenis Meja';
+      case 'tennis': return 'Tenis Lapangan';
+      case 'martial_arts': return 'Bela Diri';
+      case 'dancing': return 'Menari / Zumba';
+      case 'cricket': return 'Kriket';
+      case 'volleyball': return 'Bola Voli';
+      case 'treadmill': return 'Treadmill';
+      case 'daily_summary': return 'Gerak Aktif Lainnya';
+      default: return 'Olahraga Lainnya';
     }
   }
 
@@ -428,13 +407,7 @@ class ActivityTrackerController extends GetxController {
       return;
     }
     
-    if (category == 'outdoor') {
-      // Outdoor: has route/distance → go to map view
-      Get.to(() => ActivityDetailView(activity: activity));
-    } else {
-      // Indoor → go to indoor detail view
-      Get.to(() => IndoorActivityDetailView(activity: activity));
-    }
+    Get.to(() => ActivityDetailView(activity: activity));
   }  // ========================================
   // EDIT ACTIVITY
   // ========================================
@@ -705,20 +678,9 @@ class ActivityTrackerController extends GetxController {
       endTime.value = DateTime.now();
       _cleanup();
 
-    final mapStyle = selectedMapStyle.value;
     Color bgColor = Colors.white;
     Color textColor = Colors.black87;
     Color subTextColor = Colors.black54;
-
-    if (mapStyle == MapStyle.dark) {
-      bgColor = const Color(0xFF1E1E1E);
-      textColor = Colors.white;
-      subTextColor = Colors.grey[400]!;
-    } else if (mapStyle == MapStyle.satellite) {
-      bgColor = Colors.white.withOpacity(0.15); // Frosted clear glass
-      textColor = Colors.white;
-      subTextColor = Colors.white70;
-    }
 
     Widget dialogContent = Container(
       padding: const EdgeInsets.all(24),
@@ -809,7 +771,7 @@ class ActivityTrackerController extends GetxController {
                       Container(
                         height: 40,
                         width: 1,
-                        color: mapStyle == MapStyle.light ? Colors.black12 : Colors.white24,
+                        color: Colors.black12,
                       ),
                       // Pace or Speed (right side)
                       Expanded(
@@ -865,7 +827,7 @@ class ActivityTrackerController extends GetxController {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Divider(color: mapStyle == MapStyle.light ? Colors.black12 : Colors.white24, height: 1),
+                    child: const Divider(color: Colors.black12, height: 1),
                   ),
                   // Bottom Row stats
                   Row(
@@ -962,15 +924,7 @@ class ActivityTrackerController extends GetxController {
           ),
     );
 
-    if (mapStyle == MapStyle.satellite) {
-      dialogContent = ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-          child: dialogContent,
-        ),
-      );
-    }
+
 
     final confirm = await Get.dialog<bool>(
       Dialog(
@@ -1072,36 +1026,13 @@ class ActivityTrackerController extends GetxController {
   }
 
   void _updateCalories() {
-    // Update Pace & Speed first so we can use currentSpeed for ACSM equations
+    // Update Pace & Speed first
     _updatePaceAndSpeed();
 
     // Get baseline MET value based on activity type
     final activity = activityTypes.firstWhere((e) => e['value'] == activityType.value, orElse: () => activityTypes.first);
     double met = activity['met'] as double;
     
-    // Calculate Dynamic MET using ACSM Equations for GPS activities
-    if (currentSpeed.value > 0) {
-      final speedKmh = currentSpeed.value;
-      final speedMMin = speedKmh * 16.6667; // Convert km/h to m/min
-      
-      if (activityType.value == 'walking') {
-        // ACSM Walking: VO2 = (0.1 * speed) + 3.5
-        final vo2 = (0.1 * speedMMin) + 3.5;
-        met = vo2 / 3.5;
-      } else if (activityType.value == 'jogging' || activityType.value == 'running') {
-        // ACSM Running: VO2 = (0.2 * speed) + 3.5
-        final vo2 = (0.2 * speedMMin) + 3.5;
-        met = vo2 / 3.5;
-      } else if (activityType.value == 'cycling') {
-        // Dynamic cycling MET based on Compendium speed zones
-        if (speedKmh < 16.0) met = 4.0;
-        else if (speedKmh <= 19.1) met = 6.8;
-        else if (speedKmh <= 22.4) met = 8.0;
-        else if (speedKmh <= 25.6) met = 10.0;
-        else met = 12.0;
-      }
-    }
-
     // Calories = MET * 1.05 * weight(kg) * duration(hours)
     // Berdasarkan PDF: kcal/min = MET * 0.0175 * Berat. Jadi kcal/jam = MET * 0.0175 * 60 * Berat = MET * 1.05 * Berat
     final durationHours = duration.value / 3600;
@@ -1289,87 +1220,6 @@ class ActivityTrackerController extends GetxController {
     }
   }
 
-  /// Sync workouts from smartwatch via Health Connect
-  Future<int> syncSmartwatch() async {
-    if (isSyncingSmartwatch.value) return 0;
-    
-    isSyncingSmartwatch.value = true;
-    
-    try {
-      final syncService = SmartwatchSyncService();
-      
-      // 1. Check Health Connect availability
-      final isAvailable = await syncService.isHealthConnectAvailable();
-      if (!isAvailable) {
-        if (Get.context != null) {
-          ElegantSnackbar.warning(
-            Get.context!,
-            'Health Connect belum terinstall. Install dulu dari Play Store ya!',
-          );
-        }
-        return 0;
-      }
-      
-      // 2. Request permissions
-      final hasPermission = await syncService.requestPermissions();
-      if (!hasPermission) {
-        if (Get.context != null) {
-          ElegantSnackbar.warning(
-            Get.context!,
-            'Izin akses Health Connect diperlukan untuk sinkronisasi.',
-          );
-        }
-        return 0;
-      }
-      
-      // 3. Fetch workouts from last 7 days
-      final workouts = await syncService.fetchWorkouts();
-      
-      if (workouts.isEmpty) {
-        if (Get.context != null) {
-          ElegantSnackbar.info(
-            Get.context!,
-            'Tidak ada aktivitas baru dari smartwatch dalam 7 hari terakhir.',
-          );
-        }
-        return 0;
-      }
-      
-      // 4. Sync to backend
-      final syncedCount = await syncService.syncToBackend(workouts);
-      
-      // 5. Refresh activity list
-      await fetchActivitiesForDate(selectedDate.value);
-      
-      // 6. Check if any synced workout is from today
-      final todayStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      bool hasTodayWorkout = workouts.any((w) {
-        final startTimeStr = w['startTime'] as String?;
-        if (startTimeStr == null) return false;
-        try {
-          final startLocal = DateTime.parse(startTimeStr).toLocal();
-          return DateFormat('yyyy-MM-dd').format(startLocal) == todayStr;
-        } catch (_) {
-          return false;
-        }
-      });
-
-      if (hasTodayWorkout) {
-        await StorageService().setLastActivityInputTime(DateTime.now());
-        await NotificationService().refreshSystemNotifications();
-      }
-      
-      return syncedCount;
-    } catch (e) {
-      print('Error syncing smartwatch: $e');
-      if (Get.context != null) {
-        ErrorSnackbar.show(Get.context!, 'Gagal sinkronisasi: $e');
-      }
-      return 0;
-    } finally {
-      isSyncingSmartwatch.value = false;
-    }
-  }
 
   void setActivityType(String type) {
     activityType.value = type;

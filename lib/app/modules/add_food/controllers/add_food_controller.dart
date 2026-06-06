@@ -13,8 +13,6 @@ import '../../dashboard/controllers/dashboard_controller.dart';
 import '../../history/controllers/history_controller.dart';
 import '../../../data/models/dashboard_stats_model.dart';
 import '../../../services/notification_service.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
-import '../../../core/values/api_keys.dart';
 import 'dart:io';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
@@ -48,11 +46,6 @@ class AddFoodController extends GetxController {
   final RxBool isEditMode = false.obs;
   String? foodId;
 
-  // AI Mode
-  final RxBool isAiMode = false.obs;
-  final RxBool hasAiResult = false.obs;
-  final TextEditingController aiPromptController = TextEditingController();
-  final RxString aiImagePath = ''.obs;
 
   // Add properties to store original values when in edit mode
   double _oldTotalSugar = 0.0;
@@ -81,7 +74,6 @@ class AddFoodController extends GetxController {
     calorieContentController.dispose();
     weightController.dispose();
     quantityController.dispose();
-    aiPromptController.dispose();
     scrollController.dispose();
     super.onClose();
   }
@@ -828,97 +820,4 @@ class AddFoodController extends GetxController {
     return result ?? false;
   }
 
-  /// AI Feature for Manual Input
-  Future<void> pickImageForAi() async {
-    final ImagePicker picker = ImagePicker();
-    try {
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        aiImagePath.value = image.path;
-      }
-    } catch (e) {
-      ElegantSnackbar.error(Get.context, 'Gagal memilih gambar: $e');
-    }
-  }
-
-  Future<void> processManualWithGemini() async {
-    final promptStr = aiPromptController.text.trim();
-    if (promptStr.isEmpty && aiImagePath.value.isEmpty) {
-      ElegantSnackbar.error(Get.context, 'Tulis deskripsi makanan atau upload foto dulu ya.');
-      return;
-    }
-
-    // API Key already handled globally
-
-    isLoading.value = true;
-    try {
-      final model = GenerativeModel(
-        model: 'gemini-2.5-flash',
-        apiKey: ApiKeys.geminiApiKey,
-      );
-
-      final prompt = TextPart(
-          'Anda adalah ahli gizi. Tugas Anda mengestimasi nama makanan, kandungan kalori, dan kandungan gula dari cerita user atau foto yang diberikan.\n\n'
-          'Cerita User: "$promptStr"\n\n'
-          'Aturan wajib:\n'
-          '1. Kembalikan HANYA JSON murni tanpa Markdown.\n'
-          '2. Berikan estimasi Karbohidrat Gula (Sugar) dalam gram dan Energi Total / Kalori (Calories) dalam kkal.\n'
-          '3. Tentukan nama makanannya secara singkat dan padat (misal "Nasi Padang Ayam").\n'
-          '4. Jika tidak bisa ditebak sama sekali, kembalikan {"is_valid": false}.\n'
-          '5. Jika bisa ditebak, kembalikan {"is_valid": true, "name": "Nama Makanan", "sugar": ..., "calories": ...}.\n'
-          'Format Keluaran Sukses: {"is_valid": true, "name": "Nasi Padang Ayam", "sugar": 15.0, "calories": 650.0}');
-
-      List<Part> parts = [prompt];
-
-      if (aiImagePath.value.isNotEmpty) {
-        final imageBytes = await File(aiImagePath.value).readAsBytes();
-        parts.add(DataPart('image/jpeg', imageBytes));
-      }
-
-      final response = await model.generateContent([
-        Content.multi(parts)
-      ]);
-
-      if (response.text != null && response.text!.isNotEmpty) {
-        String cleanJson = response.text!.replaceAll('```json', '').replaceAll('```', '').trim();
-        Map<String, dynamic> data = json.decode(cleanJson);
-        
-        if (data['is_valid'] == false) {
-           ElegantSnackbar.error(Get.context, 'AI kebingungan tebak makanan dari ceritamu. Coba lebih spesifik.');
-           return;
-        }
-
-        if (data['name'] != null) nameController.text = data['name'].toString();
-        if (data['sugar'] != null) {
-          sugarContentController.text = (data['sugar'] as num).toDouble().toStringAsFixed(1);
-          sugarUnit.value = 'gram'; // Paksa ke gram
-        }
-        if (data['calories'] != null) {
-          calorieContentController.text = (data['calories'] as num).toDouble().toStringAsFixed(0);
-        }
-
-        // Tampilkan summary & hasil tanpa menutup mode AI
-        hasAiResult.value = true;
-        _updateIntakeSummary();
-        
-        // Scroll ke bawah agar hasil terlihat
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (scrollController.hasClients) {
-            scrollController.animateTo(
-              scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 800),
-              curve: Curves.easeOutCubic,
-            );
-          }
-        });
-      } else {
-        ElegantSnackbar.error(Get.context, 'Gagal terhubung ke AI. Coba lagi.');
-      }
-    } catch (e) {
-      print('❌ Gemini Manual Error: $e');
-      ElegantSnackbar.error(Get.context, 'Error dari AI: $e');
-    } finally {
-      isLoading.value = false;
-    }
-  }
 }

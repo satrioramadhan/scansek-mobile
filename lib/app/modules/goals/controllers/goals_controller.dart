@@ -96,79 +96,14 @@ class GoalsController extends GetxController {
     final water = double.tryParse(waterController.text.trim())?.toInt() ?? 0;
     final burn = double.tryParse(burnController.text.trim()) ?? 0.0;
 
-    // Fetch user data for BMI & Stabilization tracking
-    final userData = await _storage.getUserData();
-    double userWeight = 0;
-    double userHeight = 0;
-    String? previousBmiCategoryName;
-    DateTime? bmiCategoryUpdatedAt;
-
-    if (userData != null) {
-      userWeight = double.tryParse(userData['weight']?.toString() ?? '0') ?? 0;
-      userHeight = double.tryParse(userData['height']?.toString() ?? '0') ?? 0;
-      previousBmiCategoryName = userData['previousBmiCategory'];
-      if (userData['bmiCategoryUpdatedAt'] != null) {
-        bmiCategoryUpdatedAt = DateTime.tryParse(userData['bmiCategoryUpdatedAt'].toString());
-      }
-    }
-    
-    BMICategory? bmiCategory;
-    if (userWeight > 0 && userHeight > 0) {
-      final bmi = BMIHelper.hitungBMI(userWeight, userHeight);
-      bmiCategory = BMIHelper.getCategory(bmi);
-    }
-
     // Check limits (minimums & maximums)
     List<Map<String, dynamic>> warningList = [];
-    
-    // Evaluate 4-Week Cooldown logic
-    bool isCooldownActive = false;
-    BMICategory? previousCategoryParams;
-    int cooldownDaysLeft = 0;
-
-    if (bmiCategoryUpdatedAt != null && previousBmiCategoryName != null && bmiCategory != null && previousBmiCategoryName != bmiCategory.name) {
-       final diffDays = DateTime.now().difference(bmiCategoryUpdatedAt).inDays;
-       if (diffDays < 28) {
-           try {
-             final prevParams = BMIHelper.categories.firstWhere((c) => c.name == previousBmiCategoryName);
-             
-             int getSeverity(String cat) {
-               if (cat == 'Normal') return 0;
-               if (cat == 'Kurus' || cat == 'Gemuk (Overweight)') return 1;
-               if (cat == 'Obesitas Tingkat 1') return 2;
-               if (cat == 'Obesitas Tingkat 2') return 3;
-               return 0;
-             }
-             
-             int prevSeverity = getSeverity(prevParams.name);
-             int currSeverity = getSeverity(bmiCategory.name);
-             
-             // Cooldown berlaku jika tingkat keparahan (severity) berkurang / membaik
-             // Contoh: Obesitas 1 (2) -> Normal (0). Kurus (1) -> Normal (0).
-             if (prevSeverity > currSeverity) {
-                 isCooldownActive = true;
-                 cooldownDaysLeft = 28 - diffDays;
-                 previousCategoryParams = prevParams;
-             }
-           } catch (e) {
-             // fallback
-           }
-       }
-    }
 
     // --- Calories ---
     if (calories < 1200) {
        warningList.add({'text': 'Target kalori $calories kcal kerendahan nih. Tubuhmu tetep butuh energi dasar buat metabolisme harian, jangan sampai kurang gizi ya.'});
     } else if (calories > 3500) {
        warningList.add({'text': 'Target kalori $calories kcal agak tinggi nih. Pastiin kamu imbangin sama olahraga rutin ya, biar nggak numpuk jadi lemak.'});
-    } else if (isCooldownActive && previousCategoryParams != null && previousCategoryParams.name.contains('Obesitas') && calories > previousCategoryParams.defaultCalories) {
-       warningList.add({'text': 'Target kalori masuk selama fase stabilisasi maksimal ${previousCategoryParams.defaultCalories} kcal. Soalnya lambung dan metabolismemu belum stabil, kalori berlebih bakal langsung ditumpuk jadi lemak lagi (rebound).'});
-    } else if (isCooldownActive && previousCategoryParams != null && previousCategoryParams.name.contains('Kurus') && calories < previousCategoryParams.defaultCalories) {
-       warningList.add({'text': 'Target kalori masuk selama fase stabilisasi minimal ${previousCategoryParams.defaultCalories} kcal. Biarpun kamu udah Normal, tubuhmu masih butuh asupan surplus buat ngunci berat badan ideal ini biar nggak gampang anjlok lagi.'});
-    } else if (!isCooldownActive && bmiCategory != null && (bmiCategory.name.contains('Obesitas') || bmiCategory.name.contains('Gemuk')) && calories > bmiCategory.defaultCalories) {
-       warningList.add({'text': 'Peringatan BMI: Kalori $calories kcal buat kategori ${bmiCategory.name} agak berisiko bikin berat badan stuck atau naik lho. Yakin nih?'});
-    } else if (!isCooldownActive && bmiCategory != null && bmiCategory.name.contains('Kurus') && calories < bmiCategory.defaultCalories) {
-       warningList.add({'text': 'Untuk kategori BMI ${bmiCategory.name}, meningkatkan asupan kalori ke ${bmiCategory.defaultCalories} kcal dapat membantu mendukung peningkatan berat badan secara sehat.'});
     }
 
     // --- Sugar ---
@@ -176,10 +111,6 @@ class GoalsController extends GetxController {
       warningList.add({'text': 'Target gula $sugar g cukup rendah. Pastikan asupan nutrisi seimbang untuk mendukung kebutuhan energi otak dan aktivitas harian.'});
     } else if (sugar > 50) {
       warningList.add({'text': 'Target gula $sugar gram udah lewat batas saran WHO lho. Coba dikurangin pelan-pelan ya, biar gula darahmu lebih aman.'});
-    } else if (isCooldownActive && previousCategoryParams != null && sugar > previousCategoryParams.defaultSugar) {
-      warningList.add({'text': 'Selama fase stabilisasi, disaranin target gulanya maksimal ${previousCategoryParams.defaultSugar}g aja. Jaga asupan gula penting banget biar tubuhmu gampang adaptasi sama berat badan baru.'});
-    } else if (!isCooldownActive && bmiCategory != null && (bmiCategory.name.contains('Obesitas') || bmiCategory.name.contains('Gemuk')) && sugar > bmiCategory.defaultSugar) {
-       warningList.add({'text': 'Walaupun target gula $sugar gram masih dalam batas aman, untuk kategori ${bmiCategory.name}, ngurangin gula lebih jauh bisa cepetin progres kesehatanmu lho.'});
     }
 
     // --- Water ---
@@ -187,10 +118,6 @@ class GoalsController extends GetxController {
        warningList.add({'text': 'Target air ${(water/1000).toStringAsFixed(1)} L masih kurang buat hidrasi harian. Perbanyak minum ya biar ginjal sehat dan metabolisme makin lancar.'});
     } else if (water > 5000) {
        warningList.add({'text': 'Target air ${(water/1000).toStringAsFixed(1)} L itu kebanyakan banget. Minum terlalu banyak malah bikin cairan tubuh nggak seimbang (hiponatremia) lho.'});
-    } else if (isCooldownActive && previousCategoryParams != null && water < previousCategoryParams.defaultWater) {
-       warningList.add({'text': 'Di fase stabilisasi ini, usahain minum air minimal ${previousCategoryParams.defaultWater} ml ya. Ini ngebantu banget ngebuang sisa racun dan lancarin metabolisme.'});
-    } else if (!isCooldownActive && bmiCategory != null && (bmiCategory.name.contains('Obesitas') || bmiCategory.name.contains('Gemuk')) && water < bmiCategory.defaultWater) {
-       warningList.add({'text': 'Hidrasi yang cukup (minimal ${bmiCategory.defaultWater} ml) sangat membantu dalam mendukung metabolisme tubuh pada kategori ${bmiCategory.name}.'});
     }
 
     // --- Burn Calories ---
@@ -198,16 +125,6 @@ class GoalsController extends GetxController {
        warningList.add({'text': 'Target bakar $burn Kkal kayaknya agak kerendahan. Coba tambah gerak dikit lagi ya, biar badanmu makin bugar.'});
     } else if (burn > 2000) {
        warningList.add({'text': 'Target bakar $burn Kkal per hari lumayan ekstrem nih. Inget buat selalu jaga asupan nutrisi dan istirahat yang cukup biar nggak drop.'});
-    } else if (isCooldownActive && previousCategoryParams != null && !previousCategoryParams.name.contains('Kurus') && burn < previousCategoryParams.defaultBurn) {
-       warningList.add({'text': 'Biar otot tetap kencang dan stabil, cobain deh bakar minimal ${previousCategoryParams.defaultBurn} Kkal sehari selama fase ini.'});
-    } else if (isCooldownActive && previousCategoryParams != null && previousCategoryParams.name.contains('Kurus') && burn > previousCategoryParams.defaultBurn) {
-       warningList.add({'text': 'Selama fase stabilisasi, disarankan menjaga intensitas aktivitas tidak melebihi ${previousCategoryParams.defaultBurn} Kkal agar berat badan tetap terjaga stabil.'});
-    } else if (!isCooldownActive && bmiCategory != null && burn < bmiCategory.defaultBurn) {
-       warningList.add({'text': 'Peringatan BMI: Buat kategori ${bmiCategory.name}, bakar $burn Kkal itu masih kurang loh. Sistem nyaranin minimal ${bmiCategory.defaultBurn} Kkal biar hasilnya maksimal. Ayo semangat gerak!'});
-    } else if (!isCooldownActive && bmiCategory != null && bmiCategory.name.contains('Obesitas') && burn >= 800) {
-       warningList.add({'text': 'Peringatan BMI: Kategori ${bmiCategory.name} bahaya lho kalo maksain bakar $burn Kkal per hari. Sendi lutut dan jantung bisa kaget. Mulai dari yang ringan dulu aja ya!'});
-    } else if (!isCooldownActive && bmiCategory != null && bmiCategory.name.contains('Kurus') && burn > bmiCategory.defaultBurn) {
-       warningList.add({'text': 'Peringatan BMI: Kategori ${bmiCategory.name} jangan terlalu banyak bakar kalori dulu. Bakar $burn Kkal bisa bikin tubuhmu makin defisit dan susah naik berat badan. Disarankan maksimal ${bmiCategory.defaultBurn} Kkal aja buat sekarang.'});
     }
 
     bool proceed = true;
@@ -219,21 +136,9 @@ class GoalsController extends GetxController {
         warningsString += '• ${w['text']}\n';
       }
       
-      String? customFooter;
-      String? cooldownIntroMessage;
-      
-      if (isCooldownActive && previousCategoryParams != null) {
-        String userName = userData?['name'] ?? userData?['fullName'] ?? userData?['email']?.split('@')[0] ?? 'Sobat ScanSek';
-        customFooter = 'Sabar ya, setelah fase selesai kamu bisa kok ikut target ke BMI ${bmiCategory?.name ?? "Normal"}. Intinya ScanSek cuma ingetin kamu dan awasin kamu biar tetep sehat. Semangat yaa!!';
-        cooldownIntroMessage = 'Hai $userName, kamu memang udah ada di BMI ${bmiCategory?.name ?? "Normal"}, tapi kamu masih dalam fase stabilitas. Jadi target kamu selama $cooldownDaysLeft hari ke depan masih di target BMI ${previousCategoryParams.name} :';
-      }
-      
       proceed = await _showWHOWarningDialog(
         'Review Target Keseimbangan',
         warningsString,
-        customFooter: customFooter,
-        isCooldown: isCooldownActive,
-        cooldownIntroMessage: cooldownIntroMessage,
       );
       if (!proceed) return;
     }
@@ -243,7 +148,7 @@ class GoalsController extends GetxController {
   }
 
   /// Show WHO warning dialog with beautiful card design (Carousel)
-  Future<bool> _showWHOWarningDialog(String title, String message, {String? customFooter, bool isCooldown = false, String? cooldownIntroMessage}) async {
+  Future<bool> _showWHOWarningDialog(String title, String message, {String? customFooter}) async {
     // Parse the message to extract warnings
     final lines = message.split('\n');
     List<Map<String, dynamic>> warnings = [];
@@ -326,33 +231,6 @@ class GoalsController extends GetxController {
             
             const SizedBox(height: 24),
             
-            if (isCooldown && cooldownIntroMessage != null)
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  cooldownIntroMessage,
-                  style: const TextStyle(
-                    fontSize: 14.5,
-                    height: 1.5,
-                    color: Color(0xFF334155),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-
             // Carousel
             SizedBox(
               height: 200, // Fixed height for carousel items
@@ -509,8 +387,8 @@ class GoalsController extends GetxController {
                       ),
                       elevation: 0,
                     ),
-                    child: Text(
-                      isCooldown ? 'Ngeyel ganti' : 'Simpan aja',
+                      child: Text(
+                      'Simpan aja',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,

@@ -82,226 +82,11 @@ class AddFoodView extends GetView<AddFoodController> {
                 }
                 return const SizedBox.shrink();
               }),
-              // AI Toggle Button
-              Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                width: double.infinity,
-                child: Obx(() => OutlinedButton.icon(
-                  onPressed: () {
-                    controller.isAiMode.value = !controller.isAiMode.value;
-                    // Reset fields if switching
-                    if (controller.isAiMode.value) {
-                      controller.aiPromptController.clear();
-                      controller.aiImagePath.value = '';
-                      controller.hasAiResult.value = false;
-                    }
-                  },
-                  icon: Icon(
-                    controller.isAiMode.value ? Icons.close : Icons.auto_awesome,
-                    color: controller.isAiMode.value ? Colors.red[400] : const Color(0xFFFF9800),
-                  ),
-                  label: Text(
-                    controller.isAiMode.value ? 'Batal Pakai AI' : 'Gunakan AI Pro (Otomatis)',
-                    style: TextStyle(
-                      color: controller.isAiMode.value ? Colors.red[400] : const Color(0xFFFF9800),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    side: BorderSide(
-                      color: controller.isAiMode.value ? Colors.red[400]! : const Color(0xFFFF9800),
-                      width: 2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                )),
-              ),
 
-              // AI Input Section
-              Obx(() {
-                if (controller.isAiMode.value) {
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 24),
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFFFE0B2), width: 2), // Soft Orange border
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFFF9800).withOpacity(0.08),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFF3E0), // Soft orange bg
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.auto_awesome, color: Color(0xFFF57C00), size: 18),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'Ceritain Makananmu',
-                                style: AppTextStyles.bodyMedium.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF2D3142),
-                                ),
-                              ),
-                            ),
-                            TextButton.icon(
-                              onPressed: controller.pickImageForAi,
-                              icon: const Icon(Icons.photo_library_outlined, color: Color(0xFFFF9800), size: 18),
-                              label: const Text('Foto (Opsional)', style: TextStyle(color: Color(0xFFFF9800), fontSize: 12)),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        if (controller.aiImagePath.value.isNotEmpty)
-                          Stack(
-                            children: [
-                              Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                height: 120,
-                                width: double.infinity,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.white24),
-                                  image: DecorationImage(
-                                    image: FileImage(File(controller.aiImagePath.value)),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: GestureDetector(
-                                  onTap: () => controller.aiImagePath.value = '',
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.black45,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.close, color: Colors.white, size: 16),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        TextField(
-                          controller: controller.aiPromptController,
-                          maxLines: 6,
-                          style: const TextStyle(color: Color(0xFF2D3142)),
-                          decoration: InputDecoration(
-                            hintText: 'Contoh: "Saya sarapan nasi uduk 2 centong, telor rebus 1 butir, 1 ikan asin goreng ukuran 2 jari, oseng tempe 3 sendok (minyak sedang), dan es teh manis gula 2 sdt." Ceritakan juga metode masaknya (direbus/digoreng/dibakar) & takaran gula/minyaknya. Semakin detail ceritamu, semakin akurat AI memprediksi kalori dan gula!',
-                            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13, height: 1.5),
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC), // Sangat soft grey-blue
-                            contentPadding: const EdgeInsets.all(16),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: const BorderSide(color: Color(0xFFFFB74D), width: 1.5),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: controller.isLoading.value ? null : controller.processManualWithGemini,
-                            icon: controller.isLoading.value 
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Icon(Icons.analytics_outlined, color: Colors.white),
-                            label: Text(
-                              controller.isLoading.value ? 'Menganalisa...' : 'Analisis dengan AI',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFF9800),
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return const SizedBox.shrink();
-              }),
-
-              // Manual Input Fields (Hidden if AI Mode is active AND no result yet)
-              Obx(() => controller.isAiMode.value && !controller.hasAiResult.value ? const SizedBox.shrink() : Column(
+              // Manual Input Fields
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  
-                  // Teks Petunjuk Hasil AI
-                  if (controller.isAiMode.value && controller.hasAiResult.value)
-                    Container(
-                      margin: const EdgeInsets.only(bottom: 24),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF3E0), // Sangat soft orange
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFFCC80), width: 1.5),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(top: 2),
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFF9800),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.check, color: Colors.white, size: 14),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'AI berhasil memprediksi gula dan kalori dari deskripsi atau foto makanan/minuman yang kamu kasih. Lihat hasilnya di bawah, kamu bisa lihat, edit, dan simpan datanya.',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: const Color(0xFFE65100), // Dark orange text
-                                height: 1.5,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
               // Name Field
               Text(
                 'Nama Makanan/Minuman',
@@ -403,7 +188,7 @@ class AddFoodView extends GetView<AddFoodController> {
               ),
 
               ],
-              )), // End of Obx for Manual Fields
+              ),
 
               // Weight Field with Unit
 
@@ -565,10 +350,10 @@ class AddFoodView extends GetView<AddFoodController> {
                     )
                   : const SizedBox.shrink()),
 
-              // Save Button (Hidden when AI is analyzing/active WITHOUT result)
-              Obx(() => controller.isAiMode.value && !controller.hasAiResult.value ? const SizedBox.shrink() : SizedBox(
+              // Save Button
+              SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: Obx(() => ElevatedButton(
                   onPressed: controller.isLoading.value ? null : controller.saveFood,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF80CBC4), // Match appbar color
@@ -597,8 +382,8 @@ class AddFoodView extends GetView<AddFoodController> {
                             color: Colors.white,
                           ),
                         ),
-                ),
-              )),
+                )),
+              ),
 
               const SizedBox(height: 16),
             ],
