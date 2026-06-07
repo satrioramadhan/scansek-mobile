@@ -31,7 +31,6 @@ class GraphsController extends GetxController {
     'Kalori',
     'Air',
     'Aktivitas',
-    'Semua',
   ];
 
   @override
@@ -206,7 +205,6 @@ class GraphsController extends GetxController {
       case 1: return const Color(0xFFFFCC80); // Calories (Orange 500) - Stronger
       case 2: return const Color(0xFF90CAF9); // Water (Blue 500) - Stronger
       case 3: return const Color(0xFF81C784); // Activity Green (Requested)
-      case 4: return const Color(0xFFB39DDB); // All (Purple 200)
       default: return const Color(0xFF80CBC4);
     }
   }
