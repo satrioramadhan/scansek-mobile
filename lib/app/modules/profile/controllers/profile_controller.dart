@@ -138,9 +138,9 @@ class ProfileController extends GetxController {
       return 'Berat badan diisi ya';
     }
     final weightVal = double.tryParse(value);
-    if (weightVal == null || weightVal < 30 || weightVal > 300) {
-      return 'Berat badan harus 30-300 kg nih';
-    }
+    if (weightVal == null) return 'Format angka tidak valid';
+    if (weightVal < 30) return 'Berat badan minimal 30 kg';
+    if (weightVal > 150) return 'Angka ini butuh pantauan dokter spesialis khusus';
     return null;
   }
 
@@ -150,9 +150,9 @@ class ProfileController extends GetxController {
       return 'Tinggi badan diisi ya';
     }
     final heightVal = double.tryParse(value);
-    if (heightVal == null || heightVal < 100 || heightVal > 250) {
-      return 'Tinggi badan harus 100-250 cm nih';
-    }
+    if (heightVal == null) return 'Format angka tidak valid';
+    if (heightVal < 100) return 'Tinggi badan minimal 100 cm';
+    if (heightVal > 210) return 'Angka ini butuh pantauan dokter spesialis khusus';
     return null;
   }
 

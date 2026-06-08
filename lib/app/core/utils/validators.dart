@@ -98,27 +98,33 @@ class Validators {
     return null;
   }
 
-  /// Validate weight (30-300 kg)
+  /// Validate weight (30-150 kg)
   static String? weight(String? value) {
     final error = number(value, fieldName: 'Berat badan');
     if (error != null) return error;
 
     final weight = double.parse(value!);
-    if (weight < AppConstants.minWeight || weight > AppConstants.maxWeight) {
-      return 'Berat badan harus antara ${AppConstants.minWeight} - ${AppConstants.maxWeight} kg ya';
+    if (weight < AppConstants.minWeight) {
+      return 'Berat badan minimal ${AppConstants.minWeight.toInt()} kg';
+    }
+    if (weight > AppConstants.maxWeight) {
+      return 'Angka ini butuh pantauan dokter spesialis khusus';
     }
 
     return null;
   }
 
-  /// Validate height (100-250 cm)
+  /// Validate height (100-210 cm)
   static String? height(String? value) {
     final error = number(value, fieldName: 'Tinggi badan');
     if (error != null) return error;
 
     final height = double.parse(value!);
-    if (height < AppConstants.minHeight || height > AppConstants.maxHeight) {
-      return 'Tinggi badan harus antara ${AppConstants.minHeight} - ${AppConstants.maxHeight} cm ya';
+    if (height < AppConstants.minHeight) {
+      return 'Tinggi badan minimal ${AppConstants.minHeight.toInt()} cm';
+    }
+    if (height > AppConstants.maxHeight) {
+      return 'Angka ini butuh pantauan dokter spesialis khusus';
     }
 
     return null;

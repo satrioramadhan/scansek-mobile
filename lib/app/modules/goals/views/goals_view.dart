@@ -252,24 +252,24 @@ class GoalsView extends GetView<GoalsController> {
                 
                 // Reasonable range validation based on suffix (Very loose sanity checks only, let controller handle detailed warnings)
                 if (suffix == 'gram') {
-                  // Sugar: allow any extreme up to 500g before completely blocking
-                  if (num > 500) {
+                  // Sugar: allow any extreme up to 200g before completely blocking
+                  if (num > 200) {
                     return 'Kalo mau mati mati aja ga usah pake aplikasi ini. Kok bisa inputnya ngaco banget!';
                   }
                 } else if (suffix == 'kcal') {
-                  // Calories: allow up to 10000 kcal before blocking
-                  if (num > 10000) {
-                    return 'Mikir kidz kalo ngisi!, ini apk buat bantu orang yang pengin sehat. Jadi gausah buat mainan!';
+                  // Calories: allow up to 5000 kcal before blocking
+                  if (num > 7000) {
+                    return 'Sok iye banget ngisi segitu, berasa keren lu? ini apk buat bantu orang. Gausah main-main!';
                   }
                 } else if (suffix == 'ml') {
-                  // Water: allow up to 15000ml (15L) before blocking
-                  if (num > 14999) {
-                    return 'ngaco banget kalo ngisi, CB150 aja tangkinya 12 liter. Serius dikit masukin datanya.';
+                  // Water: allow up to 12000ml (12L) before blocking
+                  if (num > 12000) {
+                    return 'Sini gw kasih tau, motor CB150 aja tangkinya 12 liter, jadi gausah ngaco!';
                   }
                 } else if (suffix == 'Kkal' && label.contains('Bakar')) {
                   // Burn calories: allow up to 5000 kcal
                   if (num > 5000) {
-                    return 'Lagi ngejar masa depan lu? Kayak punya masa depan aja. Yang bener isinya!.';
+                    return 'Apaan dah? Lagi ngincer orang lu sampe segitunya defisit kalori?. Realistis dikit lah!';
                   }
                 }
                 

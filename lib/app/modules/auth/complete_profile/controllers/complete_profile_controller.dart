@@ -33,9 +33,9 @@ class CompleteProfileController extends GetxController {
     await _storage.init();
     
     // Get user name from storage
-    final name = await _storage.getString('user_name');
-    if (name != null && name.isNotEmpty) {
-      userName.value = name;
+    final userData = await _storage.getUserData();
+    if (userData != null && userData['name'] != null) {
+      userName.value = userData['name'];
     }
   }
 

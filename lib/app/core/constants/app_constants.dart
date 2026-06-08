@@ -84,11 +84,11 @@ class AppConstants {
 
   /// Weight range (kg)
   static const double minWeight = 30.0;
-  static const double maxWeight = 300.0;
+  static const double maxWeight = 150.0;
 
   /// Height range (cm)
   static const double minHeight = 100.0;
-  static const double maxHeight = 250.0;
+  static const double maxHeight = 210.0;
 
   // ============================================
   // Pagination
