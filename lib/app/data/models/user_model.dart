@@ -6,9 +6,9 @@ class UserModel extends Equatable {
   final String email;
   final String name;
   final String? dateOfBirth;
-  final String gender; // 'male' or 'female'
-  final double weight; // kg
-  final double height; // cm
+  final String gender; 
+  final double weight; 
+  final double height;
   final double bmi;
   final GoalsModel goals;
   final bool isVerified;

@@ -231,34 +231,201 @@ class AddFoodView extends GetView<AddFoodController> {
                 ],
               ),
 
-              const SizedBox(height: 16),
-
-              Text(
-                'Berapa kali Konsumsi',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w500,
+              // ================= TAKARAN SAJI SECTION =================
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE0E0E0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 8),
-              _buildNumberField(
-                controller: controller.quantityController,
-                hint: '1',
-                icon: Icons.format_list_numbered,
-                iconColor: const Color(0xFF64B5F6), // Blue untuk quantity
-                borderColor: const Color(0xFF64B5F6),
-                suffix: 'kali',
-                isInteger: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Yang ini wajib diisi dong';
-                  }
-                  final num = int.tryParse(value);
-                  if (num == null || num < 1) {
-                    return 'Minimal 1 porsi';
-                  }
-                  return null;
-                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.pie_chart_outline, color: Color(0xFF009688), size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Info gizi di atas Per Takaran Saji?',
+                            style: AppTextStyles.bodyMedium.copyWith(
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF2D3E50),
+                            ),
+                          ),
+                        ),
+                        Obx(() => Switch(
+                          value: controller.isPerServing.value,
+                          onChanged: (val) => controller.isPerServing.value = val,
+                          activeColor: const Color(0xFF009688),
+                          activeTrackColor: const Color(0xFF80CBC4),
+                        )),
+                      ],
+                    ),
+                    
+                    Obx(() {
+                      if (!controller.isPerServing.value) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Divider(height: 24),
+                            Text(
+                              'Berapa kali Konsumsi (Porsi/Bungkus)',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildNumberField(
+                              controller: controller.quantityController,
+                              hint: '1',
+                              icon: Icons.format_list_numbered,
+                              iconColor: const Color(0xFF64B5F6),
+                              borderColor: const Color(0xFF64B5F6),
+                              suffix: 'kali',
+                              isInteger: false,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Wajib diisi';
+                                }
+                                final num = double.tryParse(value);
+                                if (num == null || num <= 0) {
+                                  return 'Minimal > 0';
+                                }
+                                return null;
+                              },
+                            ),
+                          ],
+                        );
+                      }
+
+                      // Jika Takaran Saji Aktif
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Divider(height: 24),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.only(bottom: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFF3E0), // Soft Orange
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline, color: Color(0xFFFF9800), size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Lihat label "Sajian per Kemasan" di bungkusnya',
+                                    style: AppTextStyles.caption.copyWith(color: const Color(0xFFE65100)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          Text(
+                            'Sajian per Kemasan',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildNumberField(
+                            controller: controller.servingsPerPackController,
+                            hint: '1',
+                            icon: Icons.unfold_more,
+                            iconColor: const Color(0xFFFF9800),
+                            borderColor: const Color(0xFFFF9800),
+                            suffix: 'sajian',
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return 'Wajib diisi';
+                              final num = double.tryParse(value);
+                              if (num == null || num <= 0) return 'Tidak valid';
+                              return null;
+                            },
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          Text(
+                            'Berapa banyak yang kamu makan?',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: AppColors.border),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              children: [
+                                RadioListTile<String>(
+                                  title: const Text('Habis Sebungkus Penuh', style: TextStyle(fontSize: 14)),
+                                  value: 'full_pack',
+                                  groupValue: controller.consumptionType.value,
+                                  onChanged: (val) => controller.consumptionType.value = val!,
+                                  activeColor: const Color(0xFF009688),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                                RadioListTile<String>(
+                                  title: const Text('Hanya Sebagian', style: TextStyle(fontSize: 14)),
+                                  value: 'partial',
+                                  groupValue: controller.consumptionType.value,
+                                  onChanged: (val) => controller.consumptionType.value = val!,
+                                  activeColor: const Color(0xFF009688),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          if (controller.consumptionType.value == 'partial') ...[
+                            const SizedBox(height: 16),
+                            Text(
+                              'Berapa takaran yang dimakan?',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            _buildNumberField(
+                              controller: controller.partialServingsController,
+                              hint: '1',
+                              icon: Icons.restaurant,
+                              iconColor: const Color(0xFF8D6E63),
+                              borderColor: const Color(0xFF8D6E63),
+                              suffix: 'takaran',
+                              validator: (value) {
+                                if (value == null || value.isEmpty) return 'Wajib diisi';
+                                final num = double.tryParse(value);
+                                if (num == null || num <= 0) return 'Tidak valid';
+                                return null;
+                              },
+                            ),
+                          ],
+                        ],
+                      );
+                    }),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 16),

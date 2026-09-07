@@ -53,7 +53,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDpEioXUeW_EmgcxvfVY-wagybUQCNhJkg',
+    apiKey: '[token]',
     appId: '1:632959232338:android:44c2dace0542599c2ff28b',
     messagingSenderId: '632959232338',
     projectId: 'scansek-backend',

@@ -39,6 +39,12 @@ class AddFoodController extends GetxController {
   final RxString weightUnit = 'gram'.obs; // gram, ml
   final Rx<DateTime> consumptionTime = DateTime.now().obs;
 
+  // Serving Size logic
+  final RxBool isPerServing = false.obs;
+  final servingsPerPackController = TextEditingController(text: '1');
+  final RxString consumptionType = 'full_pack'.obs; // 'full_pack' or 'partial'
+  final partialServingsController = TextEditingController(text: '1');
+
   // From scan data
   final RxBool isFromScan = false.obs;
   
@@ -62,7 +68,11 @@ class AddFoodController extends GetxController {
     sugarContentController.addListener(_updateIntakeSummary);
     calorieContentController.addListener(_updateIntakeSummary);
     quantityController.addListener(_updateIntakeSummary);
+    servingsPerPackController.addListener(_updateIntakeSummary);
+    partialServingsController.addListener(_updateIntakeSummary);
     ever(sugarUnit, (_) => _updateIntakeSummary());
+    ever(isPerServing, (_) => _updateIntakeSummary());
+    ever(consumptionType, (_) => _updateIntakeSummary());
 
     _loadScanDataIfExists();
   }
@@ -74,6 +84,8 @@ class AddFoodController extends GetxController {
     calorieContentController.dispose();
     weightController.dispose();
     quantityController.dispose();
+    servingsPerPackController.dispose();
+    partialServingsController.dispose();
     scrollController.dispose();
     super.onClose();
   }
@@ -157,7 +169,7 @@ class AddFoodController extends GetxController {
 
     final sugarVal = double.tryParse(sugarText) ?? 0.0;
     final caloriesVal = double.tryParse(caloriesText) ?? 0.0;
-    final quantity = int.tryParse(quantityText) ?? 1;
+    final multiplier = _quantityMultiplier;
 
     if (sugarVal <= 0 && caloriesVal <= 0) {
       intakeSummaryLines.clear();
@@ -169,33 +181,47 @@ class AddFoodController extends GetxController {
     // Sugar calculation
     if (sugarVal > 0) {
       final sugarGrams = getSugarInGrams(); // Total grams per portion
-      final totalSugar = sugarGrams * quantity;
+      final totalSugar = sugarGrams * multiplier;
       
       // Formatting numbers
       final sugarValStr = sugarVal % 1 == 0 ? sugarVal.toInt().toString() : sugarVal.toStringAsFixed(1);
       final sugarGramsStr = sugarGrams % 1 == 0 ? sugarGrams.toInt().toString() : sugarGrams.toStringAsFixed(1);
       final totalSugarStr = totalSugar % 1 == 0 ? totalSugar.toInt().toString() : totalSugar.toStringAsFixed(1);
+      final multStr = multiplier % 1 == 0 ? multiplier.toInt().toString() : multiplier.toStringAsFixed(1);
 
       if (sugarUnit.value != 'gram') {
         // Example: 2 sdt (8g) x 2 = 16g Gula
-        lines.add('$sugarValStr ${sugarUnit.value} ($sugarGramsStr g) × $quantity = $totalSugarStr g Gula');
+        lines.add('$sugarValStr ${sugarUnit.value} ($sugarGramsStr g) × $multStr = $totalSugarStr g Gula');
       } else {
         // Example: 8g x 2 = 16g Gula
-        lines.add('$sugarGramsStr g × $quantity = $totalSugarStr g Gula');
+        lines.add('$sugarGramsStr g × $multStr = $totalSugarStr g Gula');
       }
     }
 
     // Calories calculation
     if (caloriesVal > 0) {
-      final totalCalories = caloriesVal * quantity;
+      final totalCalories = caloriesVal * multiplier;
       final calValStr = caloriesVal % 1 == 0 ? caloriesVal.toInt().toString() : caloriesVal.toStringAsFixed(0);
       final totalCalStr = totalCalories % 1 == 0 ? totalCalories.toInt().toString() : totalCalories.toStringAsFixed(0);
+      final multStr = multiplier % 1 == 0 ? multiplier.toInt().toString() : multiplier.toStringAsFixed(1);
       
       // Example: 200 kcal x 2 = 400 kcal
-      lines.add('$calValStr kcal × $quantity = $totalCalStr kcal');
+      lines.add('$calValStr kcal × $multStr = $totalCalStr kcal');
     }
 
     intakeSummaryLines.assignAll(lines);
+  }
+
+  /// Get the actual multiplier based on serving size logic
+  double get _quantityMultiplier {
+    if (isPerServing.value) {
+      if (consumptionType.value == 'full_pack') {
+        return double.tryParse(servingsPerPackController.text) ?? 1.0;
+      } else {
+        return double.tryParse(partialServingsController.text) ?? 1.0;
+      }
+    }
+    return double.tryParse(quantityController.text) ?? 1.0;
   }
 
   /// Convert sugar from current unit to grams
@@ -296,7 +322,7 @@ class AddFoodController extends GetxController {
     final sugarInGrams = getSugarInGrams();
     final calories = double.tryParse(calorieContentController.text) ?? 0.0;
     final weight = double.tryParse(weightController.text) ?? 0.0;
-    final quantity = int.tryParse(quantityController.text) ?? 1;
+    final multiplier = _quantityMultiplier;
 
     if (name.length < 2) {
       ElegantSnackbar.error(Get.context, 'Nama makanan minimal 2 karakter');
@@ -317,8 +343,8 @@ class AddFoodController extends GetxController {
     }
 
     // Weight is optional, default to 0
-    if (quantity < 1) {
-      ElegantSnackbar.error(Get.context, 'Jumlah porsi tidak valid');
+    if (multiplier <= 0) {
+      ElegantSnackbar.error(Get.context, 'Jumlah porsi/takaran tidak valid');
       return;
     }
 
@@ -453,7 +479,7 @@ class AddFoodController extends GetxController {
     final sugarInGrams = getSugarInGrams();
     final calories = double.tryParse(calorieContentController.text) ?? 0.0;
     final weight = double.tryParse(weightController.text) ?? 0.0;
-    final quantity = int.tryParse(quantityController.text) ?? 1;
+    final multiplier = _quantityMultiplier;
 
     try {
       final response = await _apiClient.post(
@@ -464,7 +490,7 @@ class AddFoodController extends GetxController {
           'calorieContent': calories,
           'weight': weight,
           'weightUnit': weightUnit.value,
-          'quantity': quantity,
+          'quantity': multiplier,
           'consumptionTime': consumptionTime.value.toIso8601String(),
           'isScanned': isFromScan.value,
         },
@@ -522,7 +548,7 @@ class AddFoodController extends GetxController {
     final sugarInGrams = getSugarInGrams();
     final calories = double.tryParse(calorieContentController.text) ?? 0.0;
     final weight = double.tryParse(weightController.text) ?? 0.0;
-    final quantity = int.tryParse(quantityController.text) ?? 1;
+    final multiplier = _quantityMultiplier;
 
     if (name.length < 2) {
       ElegantSnackbar.error(Get.context, 'Nama makanan minimal 2 karakter');
@@ -539,7 +565,7 @@ class AddFoodController extends GetxController {
     }
 
     // Weight is optional, default to 0
-    if (quantity < 1) {
+    if (multiplier <= 0) {
       ElegantSnackbar.error(Get.context, 'Jumlah porsi tidak valid');
       return;
     }
@@ -566,7 +592,7 @@ class AddFoodController extends GetxController {
     final sugarInGrams = getSugarInGrams();
     final calories = double.tryParse(calorieContentController.text) ?? 0.0;
     final weight = double.tryParse(weightController.text) ?? 0.0;
-    final quantity = int.tryParse(quantityController.text) ?? 1;
+    final multiplier = _quantityMultiplier;
 
     try {
       final response = await _apiClient.put(
@@ -577,7 +603,7 @@ class AddFoodController extends GetxController {
           'calorieContent': calories,
           'weight': weight,
           'weightUnit': weightUnit.value,
-          'quantity': quantity,
+          'quantity': multiplier,
           'consumptionTime': consumptionTime.value.toIso8601String(),
           'isScanned': isFromScan.value,
         },
@@ -638,10 +664,10 @@ class AddFoodController extends GetxController {
 
     final newSugar = getSugarInGrams();
     final newCalories = double.tryParse(calorieContentController.text) ?? 0.0;
-    final quantity = int.tryParse(quantityController.text) ?? 1;
+    final multiplier = _quantityMultiplier;
 
-    final totalNewSugar = newSugar * quantity;
-    final totalNewCalories = newCalories * quantity;
+    final totalNewSugar = newSugar * multiplier;
+    final totalNewCalories = newCalories * multiplier;
 
     double addedSugar = totalNewSugar;
     double addedCalories = totalNewCalories;

@@ -42,22 +42,24 @@ class ScannerView extends GetView<ScannerController> {
               _buildBottomBar(),
             ] else if (!controller.isShowingResult.value && (controller.isFromGallery.value || controller.showProOffer.value)) ...[
               // Action to discard frozen image if ML Kit or Gemini fails
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 2350),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, child) {
-                  return Positioned(
-                    bottom: 40 - (20 * (1 - value)), // Slide up animation
-                    left: 24,
-                    right: 24,
-                    child: Opacity(
-                      opacity: value,
-                      child: child,
-                    ),
-                  );
-                },
-                child: ElevatedButton.icon(
+              Positioned(
+                bottom: 20,
+                left: 24,
+                right: 24,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 2350),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)), // Slide up animation
+                      child: Opacity(
+                        opacity: value,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: ElevatedButton.icon(
                   onPressed: () {
                     controller.scannedImagePath.value = '';
                     controller.showProOffer.value = false;
